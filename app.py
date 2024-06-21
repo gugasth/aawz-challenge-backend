@@ -1,4 +1,5 @@
-from flask import Flask, request, jsonify
+import pandas as pd
+from flask import Flask, render_template, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from vendedor import db, Vendedor
 
@@ -126,6 +127,62 @@ def deletar_vendedor(vendedor_id):
 
     vendedor.deletar()
     return jsonify({'message': 'Vendedor deletado com sucesso'}), 200
+
+
+
+@app.route('/importar_vendedores', methods=['POST'])
+def importar_vendedores():
+    """
+    Importa dados de vendedores a partir de um arquivo CSV para adicionar ou atualizar em lote.
+
+    O CSV deve conter as colunas: Nome, CPF, data_nascimento, email, estado.
+
+    Returns:
+        JSON: Mensagem de sucesso ou erro.
+    """
+    if 'file' not in request.files:
+        return jsonify({'error': 'Nenhum arquivo enviado'}), 400
+    
+    file = request.files['file']
+    
+    try:
+        data = pd.read_csv(file)
+    except Exception as e:
+        return jsonify({'error': 'Erro ao ler o arquivo CSV', 'details': str(e)}), 400
+
+    required_columns = {'nome', 'cpf', 'data_nascimento', 'email', 'estado'}
+    if not required_columns.issubset(set(data.columns)):
+        return jsonify({'error': f'Colunas obrigatórias ausentes: {required_columns}'}), 400
+
+    for i, row in data.iterrows():
+        vendedor = Vendedor.query.filter_by(cpf=row['cpf']).first()
+        if vendedor:
+            vendedor.atualizar(
+                nome=row['nome'],
+                data_nascimento=row['data_nascimento'],
+                email=row['email'],
+                estado=row['estado']
+            )
+        else:
+            Vendedor.criar(
+                nome=row['nome'],
+                cpf=row['cpf'],
+                data_nascimento=row['data_nascimento'],
+                email=row['email'],
+                estado=row['estado']
+            )
+
+    return jsonify({'message': 'Dados dos vendedores importados com sucesso'}), 200
+
+@app.route('/importar_vendedores', methods=['GET'])
+def upload_form():
+    """
+    Rota para renderizar o formulário de upload de arquivo HTML.
+
+    Returns:
+        HTML: Formulário de upload de arquivo.
+    """
+    return render_template('importar_vendedores.html')
 
 if __name__ == '__main__':
     app.run(debug=True)
