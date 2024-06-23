@@ -1,4 +1,5 @@
 import pandas as pd
+import os
 from flask import Flask, render_template, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from vendedor import db, Vendedor
@@ -175,7 +176,7 @@ def importar_vendedores():
     return jsonify({'message': 'Dados dos vendedores importados com sucesso'}), 200
 
 @app.route('/importar_vendedores', methods=['GET'])
-def upload_form():
+def upload_vendedores():
     """
     Rota para renderizar o formulário de upload de arquivo HTML.
 
@@ -184,5 +185,83 @@ def upload_form():
     """
     return render_template('importar_vendedores.html')
 
+
+@app.route('/calcula_comissao', methods=['POST'])
+def calcula_comissao():
+    """
+    Calcula a comissão a partir de um arquivo CSV enviado na requisição.
+
+    O CSV deve conter as colunas: Data da Venda, Valor da Venda, Custo da Venda, Canal de Venda, Nome do Vendedor.
+
+    Returns:
+        JSON: Mensagem de sucesso ou erro.
+    """
+    if 'file' not in request.files:
+        return jsonify({'error': 'Nenhum arquivo enviado'}), 400
+    
+    file = request.files['file']
+    
+    try:
+        df = pd.read_csv(file, parse_dates=['Data da Venda'])
+    except Exception as e:
+        return jsonify({'error': 'Erro ao ler o arquivo CSV', 'details': str(e)}), 400
+
+    # Verifica se as colunas necessárias estão presentes
+    required_columns = {'Data da Venda', 'Valor da Venda', 'Custo da Venda', 'Canal de Venda', 'Nome do Vendedor'}
+    if not required_columns.issubset(set(df.columns)):
+        return jsonify({'error': f'Colunas obrigatórias ausentes: {required_columns}'}), 400
+
+    # Função auxiliar para retirar uma substring de uma string em uma coluna do dataframe
+    def retira_string(df: pd.DataFrame, col: str, substr: str) -> pd.DataFrame:
+        df[col] = df[col].str.replace(substr, '')
+        return df
+
+    # Função auxiliar para converter valores em formato "Real brasileiro" para float
+    def reais_para_float(df: pd.DataFrame, col: str) -> pd.DataFrame:
+        df = retira_string(df, col, 'R$ ')
+        df[col] = df[col].str.replace('.', '')
+        df[col] = df[col].str.replace(',', '.')
+        df[col] = df[col].astype(float)
+        return df
+
+    # Transforma as colunas que representam Real brasileiro em formato número float
+    df = reais_para_float(df, 'Valor da Venda')
+    df = reais_para_float(df, 'Custo da Venda')
+
+    # Calcula a comissão
+    df['Comissao Total'] = df['Valor da Venda'] * 0.1
+    df['Comissao Descontada'] = df['Comissao Total']
+
+    # Ajustes para vendas online
+    vendas_online = df['Canal de Venda'] == 'Online'
+    df.loc[vendas_online, 'Comissao Descontada'] -= df.loc[vendas_online, 'Comissao Total'] * 0.2
+
+    # Ajustes para comissões altas
+    comissoes_altas = df['Comissao Total'] >= 1000
+    df.loc[comissoes_altas, 'Comissao Descontada'] -= df.loc[comissoes_altas, 'Comissao Total'] * 0.1
+
+    df_comissao = df[['Nome do Vendedor', 'Comissao Total', 'Comissao Descontada']]
+
+    # Cria o diretório de dados de saída, caso ele não exista
+    if not os.path.exists('output_data/'):
+        os.makedirs('output_data/')
+
+    # Gera o arquivo csv com a saída pedida
+    output_file = 'output_data/Comissao_gerada.csv'
+    df_comissao.to_csv(output_file, index=False)
+
+    return jsonify({'message': 'Comissão calculada e arquivo gerado com sucesso', 'file_path': output_file}), 200
+
+@app.route('/calcula_comissao', methods=['GET'])
+def upload_comissao():
+    """
+    Rota para renderizar o formulário de upload de arquivo HTML.
+
+    Returns:
+        HTML: Formulário de upload de arquivo.
+    """
+    return render_template('calcula_comissao.html')
+
 if __name__ == '__main__':
     app.run(debug=True)
+
