@@ -2,9 +2,9 @@
 Desafio técnico AAWZ - Backend
 
 Esse README contêm respectivamente, os seguintes tópicos:
-- Configuração de ambiente virtual venv (opcional, mas recomendado).
-- Instalação de dependências
-- Execução dos códigos
+- [Ambiente Virtual](#ambiente-virtual-opcional-mas-recomendado)
+- [Instalação de dependências](#instalar-dependências)
+- [Execução](#executando-os-códigos-python)
 
 ## Ambiente Virtual (Opcional, mas Recomendado)
 
