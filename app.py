@@ -2,9 +2,13 @@ import pandas as pd
 import os
 from flask import Flask, render_template, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.exc import SQLAlchemyError
 from vendedor import db, Vendedor
+from models import db, VendaOnline, VendaTelefone, VendaLojaFisica
 
 app = Flask(__name__)
+
+
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///aawz-challenge.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
@@ -268,9 +272,7 @@ def upload_comissao():
 def volume_vendas():
     """
     Calcula o volume de vendas e a média por vendedor, recebendo um arquivo CSV enviado na requisição.
-
     O CSV deve conter as colunas: Data da Venda, Valor da Venda, Custo da Venda, Canal de Venda, Nome do Vendedor.
-
     Returns:
         JSON: Mensagem de sucesso ou erro.
     """
@@ -306,33 +308,26 @@ def volume_vendas():
     df = reais_para_float(df, 'Valor da Venda')
     df = reais_para_float(df, 'Custo da Venda')
 
-
-    def agrupar_e_salvar(df: pd.DataFrame, canal: str, nome_arquivo: str) -> None:
-        """
-        Função que agrupa as vendas para cada canal de venda
-        Args:
-            df (pd.DataFrame): df contendo o csv da planilha de vendas
-            canal (str): o canal da venda para realizar o agrupamento
-            nome_arquivo (str): nome do arquivo a ser gerado
-        """
+    def agrupar_e_salvar(df: pd.DataFrame, canal: str, table) -> None:
         df_filtrado = df[df['Canal de Venda'] == canal]
         df_agrupado = df_filtrado.groupby('Nome do Vendedor', as_index=False).agg({'Valor da Venda': ['sum', 'mean']})
         df_agrupado.columns = ['Nome do Vendedor', 'Volume Total', 'Média']
 
-        # Cria o diretório de dados de saída, caso ele não exista
-        if not os.path.exists('output_data/'):
-            os.makedirs('output_data/')
+        for _, row in df_agrupado.iterrows():
+            venda = table(nome_do_vendedor=row['Nome do Vendedor'], volume_total=row['Volume Total'], media=row['Média'])
+            db.session.add(venda)
+        try:
+            db.session.commit()
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            return jsonify({'error': 'Erro ao salvar no banco de dados', 'details': str(e)}), 500
 
-        # Gera o arquivo csv com a saída pedida
-        output_file = f'output_data/{nome_arquivo}.csv'
-        df_agrupado.to_csv(output_file, index=False)
+    agrupar_e_salvar(df, 'Online', VendaOnline)
+    agrupar_e_salvar(df, 'Telefone', VendaTelefone)
+    agrupar_e_salvar(df, 'Loja física', VendaLojaFisica)
 
-    # Agrupar e salvar os dados para cada canal de venda
-    agrupar_e_salvar(df, 'Online', 'Volume_Vendas_Online')
-    agrupar_e_salvar(df, 'Telefone', 'Volume_Vendas_Telefone')
-    agrupar_e_salvar(df, 'Loja física', 'Volume_Vendas_Loja_Fisica')
+    return jsonify({'message': 'Volume de vendas e média calculados e dados salvos com sucesso no banco de dados'}), 200
 
-    return jsonify({'message': 'Volume de vendas e média calculados e arquivo gerado com sucesso'}), 200
 
 @app.route('/volume-vendas', methods=['GET'])
 def upload_volume():
