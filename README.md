@@ -65,6 +65,7 @@ A rota correspondente ao desafio n°1 é /vendedores.
 
 A rota correspondente ao desafio n°2 é /importar_vendedores, eu implementei um html básico pra conseguir enviar um arquivo .CSV na requisição HTTP e conseguir testar mais facilmente essa tarefa. Exemplo de arquivo a ser utilizado [aqui](https://docs.google.com/spreadsheets/d/1dK91Yw69Wka9oA15Mw8zhz5GX3upiZihDyG14iZTAPg/edit?usp=sharing).
 
+A rota correspondente ao desafio n³3 é /calcula_comissao, eu implementei um html básico pra conseguir enviar um arquivo.CSV na requisição HTTP e conseguir testar mais facilmente essa tarefa. Exemplo de arquivo a ser utilizado é o disponibilizado no enunciado do desafio, em formato .CSV.
 
 
 Segue anexo exemplo testando todas as possíveis requisições, utilizando PostMan:
