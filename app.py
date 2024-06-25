@@ -3,8 +3,7 @@ import os
 from flask import Flask, render_template, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.exc import SQLAlchemyError
-from vendedor import db, Vendedor
-from models import db, VendaOnline, VendaTelefone, VendaLojaFisica
+from models import db, Vendedor, VendaOnline, VendaTelefone, VendaLojaFisica
 
 app = Flask(__name__)
 
