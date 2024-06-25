@@ -131,7 +131,7 @@ def deletar_vendedor(vendedor_id):
 
 
 
-@app.route('/importar_vendedores', methods=['POST'])
+@app.route('/importar-vendedores', methods=['POST'])
 def importar_vendedores():
     """
     Importa dados de vendedores a partir de um arquivo CSV para adicionar ou atualizar em lote.
@@ -175,7 +175,7 @@ def importar_vendedores():
 
     return jsonify({'message': 'Dados dos vendedores importados com sucesso'}), 200
 
-@app.route('/importar_vendedores', methods=['GET'])
+@app.route('/importar-vendedores', methods=['GET'])
 def upload_vendedores():
     """
     Rota para renderizar o formulário de upload de arquivo HTML.
@@ -186,7 +186,7 @@ def upload_vendedores():
     return render_template('importar_vendedores.html')
 
 
-@app.route('/calcula_comissao', methods=['POST'])
+@app.route('/calcula-comissao', methods=['POST'])
 def calcula_comissao():
     """
     Calcula a comissão a partir de um arquivo CSV enviado na requisição.
@@ -252,7 +252,7 @@ def calcula_comissao():
 
     return jsonify({'message': 'Comissão calculada e arquivo gerado com sucesso', 'file_path': output_file}), 200
 
-@app.route('/calcula_comissao', methods=['GET'])
+@app.route('/calcula-comissao', methods=['GET'])
 def upload_comissao():
     """
     Rota para renderizar o formulário de upload de arquivo HTML.
@@ -264,7 +264,7 @@ def upload_comissao():
 
 
 
-@app.route('/volume_vendas', methods=['POST'])
+@app.route('/volume-vendas', methods=['POST'])
 def volume_vendas():
     """
     Calcula o volume de vendas e a média por vendedor, recebendo um arquivo CSV enviado na requisição.
@@ -334,7 +334,7 @@ def volume_vendas():
 
     return jsonify({'message': 'Volume de vendas e média calculados e arquivo gerado com sucesso'}), 200
 
-@app.route('/volume_vendas', methods=['GET'])
+@app.route('/volume-vendas', methods=['GET'])
 def upload_volume():
     """
     Rota para renderizar o formulário de upload de arquivo HTML.
